@@ -35,6 +35,10 @@ class App {
     this.ctx = this.canvas.getContext("2d");
     this.cellSize = 40;
 
+    // FIX 4: Performance - Layered Rendering
+    this.bgCanvas = document.createElement("canvas");
+    this.bgCtx = this.bgCanvas.getContext("2d");
+
     this.mode = "idle";
     this.mapData = null;
     this.simState = null;
@@ -63,14 +67,30 @@ class App {
           opt.innerText = m;
           select.appendChild(opt);
         });
+      } else if (data.type === "error") {
+        alert("Server Error: " + data.message);
+      } else if (data.type === "save_response") {
+        // FIX 3: Confirmation Save Logic
+        if (data.success) {
+          alert("Map saved successfully!");
+        } else {
+          alert("Error saving map: " + data.error);
+        }
       } else if (data.type === "update") {
+        const oldMap = JSON.stringify(this.mapData);
         this.mapData = data.map;
         this.simState = data.state;
+
+        // Only redraw background if map structure changed
+        if (oldMap !== JSON.stringify(this.mapData)) {
+          this.resizeCanvas();
+          this.drawBackground();
+        }
+
         document.getElementById("sim-controls").classList.remove("hidden");
         document.getElementById("agent-status").innerText = data.agent_connected
           ? "Agent: Connected"
           : "Agent: Waiting...";
-        this.resizeCanvas();
         this.draw();
       } else if (data.type === "agent_telemetry") {
         document.getElementById("agent-brain-panel").style.display = "flex";
@@ -216,14 +236,17 @@ class App {
         map_data: this.mapData,
       }),
     );
-    alert("Map saved!");
   }
 
   /** Adapts the HTML5 Canvas dimensions to fit the active grid. */
   resizeCanvas() {
     if (!this.mapData) return;
-    this.canvas.width = this.mapData.width * this.cellSize;
-    this.canvas.height = this.mapData.height * this.cellSize;
+    const w = this.mapData.width * this.cellSize;
+    const h = this.mapData.height * this.cellSize;
+    this.canvas.width = w;
+    this.canvas.height = h;
+    this.bgCanvas.width = w;
+    this.bgCanvas.height = h;
   }
 
   /** Registers mouse interaction listeners for map editing functionality. */
@@ -254,81 +277,100 @@ class App {
     });
   }
 
-  /** Renders the map grid, entities, and shading effects onto the canvas. */
-  draw() {
+  /** Renders the static parts of the map (floor, walls) once. */
+  drawBackground() {
     if (!this.mapData) return;
-
-    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    this.bgCtx.clearRect(0, 0, this.bgCanvas.width, this.bgCanvas.height);
 
     for (let y = 0; y < this.mapData.height; y++) {
       for (let x = 0; x < this.mapData.width; x++) {
         const cell = this.mapData.grid[y][x];
         const cx = x * this.cellSize;
         const cy = y * this.cellSize;
-        const key = `${x},${y}`;
 
         if (cell === "floor") {
-          let color = "#D8DEE9"; // Default Nord 4
+          this.bgCtx.fillStyle = "#D8DEE9"; // Default Nord 4
+          this.bgCtx.fillRect(cx, cy, this.cellSize, this.cellSize);
+          this.bgCtx.strokeStyle = "#E5E9F0";
+          this.bgCtx.strokeRect(cx, cy, this.cellSize, this.cellSize);
 
-          // 1. Calculate and draw the base color (including heatmap)
-          if (this.simState && this.simState.visits[key]) {
-            color = interpolateColor(color, this.simState.visits[key], 15);
-          }
-          this.ctx.fillStyle = color;
-          this.ctx.fillRect(cx, cy, this.cellSize, this.cellSize);
-          this.ctx.strokeStyle = "#E5E9F0";
-          this.ctx.strokeRect(cx, cy, this.cellSize, this.cellSize);
-
-          // 2. Draw the Teleport Symbol (A purple diamond) on top of the color
           const isEdge =
             x === 0 ||
             x === this.mapData.width - 1 ||
             y === 0 ||
             y === this.mapData.height - 1;
           if (this.mapData.teleport && isEdge) {
-            this.ctx.beginPath();
-            // Draw a diamond inset by 10 pixels
-            this.ctx.moveTo(cx + this.cellSize / 2, cy + 10);
-            this.ctx.lineTo(cx + this.cellSize - 10, cy + this.cellSize / 2);
-            this.ctx.lineTo(cx + this.cellSize / 2, cy + this.cellSize - 10);
-            this.ctx.lineTo(cx + 10, cy + this.cellSize / 2);
-            this.ctx.closePath();
-
-            // Use Nord 15 (Purple) with slight transparency
-            this.ctx.strokeStyle = "rgba(180, 142, 173, 0.9)";
-            this.ctx.lineWidth = 2;
-            this.ctx.stroke();
-            this.ctx.lineWidth = 1; // Reset line width for other drawings
+            this.bgCtx.beginPath();
+            this.bgCtx.moveTo(cx + this.cellSize / 2, cy + 10);
+            this.bgCtx.lineTo(cx + this.cellSize - 10, cy + this.cellSize / 2);
+            this.bgCtx.lineTo(cx + this.cellSize / 2, cy + this.cellSize - 10);
+            this.bgCtx.lineTo(cx + 10, cy + this.cellSize / 2);
+            this.bgCtx.closePath();
+            this.bgCtx.strokeStyle = "rgba(180, 142, 173, 0.9)";
+            this.bgCtx.lineWidth = 2;
+            this.bgCtx.stroke();
+            this.bgCtx.lineWidth = 1;
           }
         } else if (cell === "obstacle") {
-          let color = "#4C566A";
+          this.bgCtx.fillStyle = "#4C566A";
+          this.bgCtx.fillRect(cx, cy, this.cellSize, this.cellSize);
 
-          // Optional: You could also style edge obstacles differently here,
-          // but keeping them standard usually looks cleaner.
-          if (this.simState && this.simState.hits[key]) {
-            color = interpolateColor(color, this.simState.hits[key], 5);
-          }
+          this.bgCtx.fillStyle = "rgba(255,255,255,0.1)";
+          this.bgCtx.beginPath();
+          this.bgCtx.moveTo(cx, cy);
+          this.bgCtx.lineTo(cx + this.cellSize, cy);
+          this.bgCtx.lineTo(cx + this.cellSize - 5, cy + 5);
+          this.bgCtx.lineTo(cx + 5, cy + 5);
+          this.bgCtx.fill();
+        }
+      }
+    }
+  }
 
-          this.ctx.fillStyle = color;
+  /** Renders the map grid, entities, and shading effects onto the canvas. */
+  draw() {
+    if (!this.mapData) return;
+
+    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+    // Draw the pre-rendered static background
+    this.ctx.drawImage(this.bgCanvas, 0, 0);
+
+    // Only draw dynamic elements (Heatmaps, Start, Target, Agent)
+    for (let y = 0; y < this.mapData.height; y++) {
+      for (let x = 0; x < this.mapData.width; x++) {
+        const cx = x * this.cellSize;
+        const cy = y * this.cellSize;
+        const key = `${x},${y}`;
+
+        // 1. Draw Heatmaps (Visits/Hits)
+        if (
+          this.simState &&
+          this.simState.visits[key] &&
+          this.simState.visits[key] > 1
+        ) {
+          this.ctx.fillStyle = interpolateColor(
+            "#D8DEE9",
+            this.simState.visits[key],
+            15,
+          );
+          this.ctx.globalAlpha = 0.5;
           this.ctx.fillRect(cx, cy, this.cellSize, this.cellSize);
-
-          this.ctx.fillStyle = "rgba(255,255,255,0.1)";
-          this.ctx.beginPath();
-          this.ctx.moveTo(cx, cy);
-          this.ctx.lineTo(cx + this.cellSize, cy);
-          this.ctx.lineTo(cx + this.cellSize - 5, cy + 5);
-          this.ctx.lineTo(cx + 5, cy + 5);
-          this.ctx.fill();
-
-          this.ctx.fillStyle = "rgba(0,0,0,0.3)";
-          this.ctx.beginPath();
-          this.ctx.moveTo(cx + this.cellSize, cy);
-          this.ctx.lineTo(cx + this.cellSize, cy + this.cellSize);
-          this.ctx.lineTo(cx + this.cellSize - 5, cy + this.cellSize - 5);
-          this.ctx.lineTo(cx + this.cellSize - 5, cy + 5);
-          this.ctx.fill();
+          this.ctx.globalAlpha = 1.0;
         }
 
+        if (this.simState && this.simState.hits[key]) {
+          this.ctx.fillStyle = interpolateColor(
+            "#4C566A",
+            this.simState.hits[key],
+            5,
+          );
+          this.ctx.globalAlpha = 0.7;
+          this.ctx.fillRect(cx, cy, this.cellSize, this.cellSize);
+          this.ctx.globalAlpha = 1.0;
+        }
+
+        // 2. Draw Points of Interest
         if (
           this.mapData.start &&
           x === this.mapData.start[0] &&
@@ -355,28 +397,13 @@ class App {
       const centerY = ay * this.cellSize + this.cellSize / 2;
       const radius = this.cellSize / 2 - 4;
 
-      const gradient = this.ctx.createRadialGradient(
-        centerX - radius / 3,
-        centerY - radius / 3,
-        radius / 5,
-        centerX,
-        centerY,
-        radius,
-      );
-      gradient.addColorStop(0, "#88C0D0");
-      gradient.addColorStop(1, "#5E81AC");
-
       this.ctx.beginPath();
       this.ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
-      this.ctx.fillStyle = gradient;
-      this.ctx.fill();
-
+      this.ctx.fillStyle = "#88C0D0";
       this.ctx.shadowColor = "rgba(0,0,0,0.5)";
       this.ctx.shadowBlur = 5;
-      this.ctx.shadowOffsetX = 2;
-      this.ctx.shadowOffsetY = 2;
       this.ctx.fill();
-      this.ctx.shadowColor = "transparent";
+      this.ctx.shadowBlur = 0;
     }
   }
 }
