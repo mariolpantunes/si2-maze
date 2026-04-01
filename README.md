@@ -1,4 +1,4 @@
-# ![logo](frontend/favicon.svg) SI2 - Maze Simulation Environment
+# ![logo](frontend/favicon.svg =128x128) SI2 - Maze Simulation Environment
 
 A simulation platform for autonomous agents to navigate mazes and explore rooms. This project follows a client-server architecture using WebSockets for real-time visualization and agent control.
 
@@ -106,7 +106,7 @@ python agents/manual_agent.py
 ## Authors
 
   * **Mário Antunes** - [mariolpantunes](https://github.com/mariolpantunes)
-  
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
