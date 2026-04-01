@@ -1,4 +1,4 @@
-# ![logo](frontend/favicon.svg =128x128) SI2 - Maze Simulation Environment
+# <img src="frontend/favicon.svg" alt="logo" width="128" height="128" align="middle"> SI2 - Maze Simulation Environment
 
 A simulation platform for autonomous agents to navigate mazes and explore rooms. This project follows a client-server architecture using WebSockets for real-time visualization and agent control.
 
