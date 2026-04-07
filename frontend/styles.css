@@ -17,31 +17,58 @@
     --nord15: #b48ead;
 }
 
+* {
+    box-sizing: border-box;
+}
+
 body {
     margin: 0;
     padding: 0;
     background-color: var(--nord0);
     color: var(--nord4);
-    font-family: monospace;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
     display: flex;
     height: 100vh;
     overflow: hidden;
 }
 
+h1,
+h2,
+h3,
+h4,
+p {
+    margin: 0;
+}
+
 #ui-layer {
-    width: 300px;
+    width: 320px;
     background-color: var(--nord1);
     border-right: 2px solid var(--nord3);
     padding: 20px;
     display: flex;
     flex-direction: column;
     z-index: 10;
+    overflow-y: auto;
 }
 
 .panel {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 15px;
+}
+
+.panel h1 {
+    font-size: 1.5rem;
+    color: var(--nord8);
+    margin-bottom: 10px;
+    text-align: center;
+}
+
+.panel h2 {
+    font-size: 1.2rem;
+    color: var(--nord9);
+    border-bottom: 1px solid var(--nord3);
+    padding-bottom: 5px;
 }
 
 .hidden {
@@ -50,15 +77,17 @@ body {
 
 button,
 select,
-input {
+input:not([type="checkbox"]) {
     background-color: var(--nord3);
     color: var(--nord6);
-    border: none;
-    padding: 10px;
+    border: 1px solid transparent;
+    padding: 12px;
     cursor: pointer;
-    font-family: monospace;
+    font-family: inherit;
     font-size: 14px;
-    border-radius: 4px;
+    border-radius: 6px;
+    width: 100%;
+    transition: all 0.2s ease;
 }
 
 button:hover {
@@ -66,37 +95,60 @@ button:hover {
     color: var(--nord0);
 }
 
-#canvas-container {
-    flex-grow: 1;
+button:active {
+    transform: translateY(1px);
+}
+
+button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+input:focus,
+select:focus {
+    outline: none;
+    border-color: var(--nord8);
+    background-color: var(--nord2);
+}
+
+label {
+    font-size: 0.9rem;
+    color: var(--nord4);
+    margin-bottom: 0px;
+    margin-left: 2px;
+}
+
+.input-group {
     display: flex;
-    justify-content: center;
-    align-items: center;
-    background-color: var(--nord0);
+    flex-direction: column;
+    gap: 5px;
 }
 
-canvas {
-    background-color: var(--nord1);
-    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
-    cursor: crosshair;
-}
-
-#editor-tools {
-    display: grid;
-    grid-template-columns: 1fr 1fr; /* Two equal columns */
+.input-row {
+    display: flex;
     gap: 10px;
-    margin-top: 10px;
 }
 
-/* Make the 'Save Map' button span both columns so it stands out */
-#editor-tools button:last-child {
-    grid-column: 1 / -1;
-    background-color: var(
-        --nord10
-    ); /* Slightly different color to highlight saving */
+.input-row > div {
+    flex: 1;
 }
 
-#editor-tools button:last-child:hover {
-    background-color: var(--nord14); /* Green hover for save */
+#sim-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 5px;
+    padding: 15px;
+    background-color: var(--nord0);
+    border-radius: 8px;
+    border: 1px solid var(--nord3);
+}
+
+#agent-status {
+    font-weight: bold;
+    text-align: center;
+    padding: 5px;
+    color: var(--nord13);
 }
 
 #canvas-container {
@@ -105,8 +157,33 @@ canvas {
     justify-content: space-evenly;
     align-items: center;
     background-color: var(--nord0);
-    padding: 20px;
-    gap: 20px;
+    padding: 30px;
+    gap: 30px;
+    overflow: auto;
+}
+
+canvas {
+    background-color: var(--nord1);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    cursor: crosshair;
+    border-radius: 4px;
+}
+
+#editor-tools {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 5px;
+}
+
+#editor-tools button:last-child {
+    grid-column: 1 / -1;
+    background-color: var(--nord10);
+    font-weight: bold;
+}
+
+#editor-tools button:last-child:hover {
+    background-color: var(--nord14);
 }
 
 .view-panel {
@@ -117,96 +194,112 @@ canvas {
     align-items: center;
     justify-content: start;
     background-color: var(--nord1);
-    padding: 15px;
-    border-radius: 8px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
+    border: 1px solid var(--nord3);
 }
 
 .view-panel h3 {
-    margin-top: 0;
+    margin-bottom: 15px;
     color: var(--nord8);
-}
-.view-panel h4 {
-    margin-bottom: 5px;
-    color: var(--nord4);
+    font-size: 1.1rem;
 }
 
 #prob-display {
     width: 100%;
-    margin-top: 15px;
+    margin-top: 20px;
+    background-color: var(--nord0);
+    padding: 15px;
+    border-radius: 8px;
+}
+
+#prob-display h4 {
+    margin-bottom: 10px;
+    color: var(--nord4);
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
 }
 
 .prob-bar {
     display: flex;
     align-items: center;
-    margin-bottom: 5px;
-    gap: 10px;
+    margin-bottom: 8px;
+    gap: 12px;
 }
 
 .lbl {
-    width: 50px;
+    width: 60px;
     text-align: right;
+    font-size: 0.85rem;
 }
+
 .bar-bg {
     flex-grow: 1;
-    background-color: var(--nord0);
-    height: 15px;
-    border-radius: 3px;
+    background-color: var(--nord2);
+    height: 12px;
+    border-radius: 6px;
     overflow: hidden;
 }
+
 .bar-fill {
     background-color: var(--nord14);
     height: 100%;
     width: 0%;
-    transition: width 0.2s ease;
+    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 #compass {
     position: relative;
-    width: 60px;
-    height: 60px;
-    margin-top: 20px;
-    margin-bottom: 5px;
+    width: 80px;
+    height: 80px;
+    margin-top: 25px;
     background-color: var(--nord0);
     border: 3px solid var(--nord3);
     border-radius: 50%;
     display: flex;
     justify-content: center;
     align-items: center;
-    font-size: 14px;
+    font-size: 16px;
     font-weight: bold;
     color: var(--nord4);
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
     pointer-events: none;
-    box-sizing: border-box;
 }
 
 #compass .dir-n {
     position: absolute;
-    top: 4px;
+    top: 6px;
     color: var(--nord11);
 }
 #compass .dir-s {
     position: absolute;
-    bottom: 4px;
+    bottom: 6px;
 }
 #compass .dir-e {
     position: absolute;
-    right: 6px;
+    right: 8px;
 }
 #compass .dir-w {
     position: absolute;
-    left: 6px;
+    left: 8px;
 }
 
 #compass::after {
     content: "";
     position: absolute;
-    width: 6px;
-    height: 6px;
+    width: 8px;
+    height: 8px;
     background-color: var(--nord4);
     border-radius: 50%;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
+}
+
+hr {
+    border: none;
+    border-top: 1px solid var(--nord3);
+    margin: 5px 0;
 }

@@ -102,9 +102,12 @@ class App {
   updateAgentBrainUI(telemetry) {
     if (!this.mapData) return;
 
-    // Match canvas sizes
-    this.agentCanvas.width = this.canvas.width;
-    this.agentCanvas.height = this.canvas.height;
+    // Match canvas sizes only if needed to avoid flicker and redundant state resets
+    if (this.agentCanvas.width !== this.canvas.width || this.agentCanvas.height !== this.canvas.height) {
+        this.agentCanvas.width = this.canvas.width;
+        this.agentCanvas.height = this.canvas.height;
+    }
+    
     this.agentCtx.clearRect(
       0,
       0,
@@ -218,6 +221,7 @@ class App {
 
     document.getElementById("editor-tools").classList.remove("hidden");
     this.resizeCanvas();
+    this.drawBackground();
     this.draw();
   }
 
@@ -265,12 +269,15 @@ class App {
       ) {
         if (this.editTool === "floor" || this.editTool === "obstacle") {
           this.mapData.grid[y][x] = this.editTool;
+          this.drawBackground();
         } else if (this.editTool === "start") {
           this.mapData.start = [x, y];
           this.mapData.grid[y][x] = "floor";
+          this.drawBackground();
         } else if (this.editTool === "target") {
           this.mapData.target = [x, y];
           this.mapData.grid[y][x] = "floor";
+          this.drawBackground();
         }
         this.draw();
       }
