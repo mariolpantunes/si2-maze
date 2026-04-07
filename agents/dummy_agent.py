@@ -21,8 +21,7 @@ class RandomWalkerAgent(BaseAgent):
     """
 
     def __init__(self, server_uri: str = "ws://localhost:8765") -> None:
-        """
-        Initialize the random walker agent.
+        """Initialize the random walker agent.
 
         Args:
             server_uri (str): URI of the simulation server.
@@ -35,8 +34,7 @@ class RandomWalkerAgent(BaseAgent):
         self.visited_tiles.clear()
 
     async def deliberate_maze(self) -> Optional[str]:
-        """
-        Logic for maps where 'target' is defined.
+        """Logic for maps where 'target' is defined.
 
         Returns:
             Optional[str]: The chosen direction or None.
@@ -45,9 +43,7 @@ class RandomWalkerAgent(BaseAgent):
             return None
 
         # Record current position
-        pos_str = (
-            f"{self.current_state['position'][0]},{self.current_state['position'][1]}"
-        )
+        pos_str = f"{self.current_state['position'][0]},{self.current_state['position'][1]}"
         self.visited_tiles.add(pos_str)
 
         # Get valid actions from the server state
@@ -60,8 +56,8 @@ class RandomWalkerAgent(BaseAgent):
         return random.choice(valid_actions)
 
     async def deliberate_room(self) -> Optional[str]:
-        """
-        Logic for room clearing (no target).
+        """Logic for room clearing (no target).
+
         Uses the same random walking strategy as maze mode.
 
         Returns:
@@ -70,12 +66,10 @@ class RandomWalkerAgent(BaseAgent):
         return await self.deliberate_maze()
 
     async def send_telemetry(self, websocket: Any) -> None:
-        """
-        Calculates arbitrary probabilities (since it's random)
-        and sends internal map memory to the frontend UI.
+        """Calculates arbitrary probabilities (since it's random) and sends internal map memory to the frontend UI.
 
         Args:
-            websocket: The current WebSocket connection.
+            websocket (Any): The current WebSocket connection.
         """
         if not self.current_state:
             return
@@ -100,5 +94,7 @@ class RandomWalkerAgent(BaseAgent):
 
 
 if __name__ == "__main__":
-    agent = RandomWalkerAgent()
+    import sys
+    uri = sys.argv[1] if len(sys.argv) > 1 else "ws://localhost:8765"
+    agent = RandomWalkerAgent(uri)
     asyncio.run(agent.run())

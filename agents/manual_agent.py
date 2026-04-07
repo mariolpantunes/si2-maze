@@ -17,8 +17,7 @@ except ImportError:
 
 
 def getch() -> str:
-    """
-    Reads a single character from the standard input (Linux/macOS).
+    """Reads a single character from the standard input (Linux/macOS).
 
     Returns:
         str: The character read, in lowercase.
@@ -34,13 +33,10 @@ def getch() -> str:
 
 
 class ManualAgent(BaseAgent):
-    """
-    An agent controlled manually via the terminal using W, A, S, D keys instantly.
-    """
+    """An agent controlled manually via the terminal using W, A, S, D keys instantly."""
 
     def __init__(self, server_uri: str = "ws://localhost:8765") -> None:
-        """
-        Initialize the manual agent.
+        """Initialize the manual agent.
 
         Args:
             server_uri (str): URI of the simulation server.
@@ -49,8 +45,7 @@ class ManualAgent(BaseAgent):
         self.key_mapping = {"w": "N", "s": "S", "d": "E", "a": "W"}
 
     async def get_manual_action(self) -> Optional[str]:
-        """
-        Prompts the user for a valid WASD input.
+        """Prompts the user for a valid WASD input.
 
         Returns:
             Optional[str]: The chosen direction or None.
@@ -90,8 +85,7 @@ class ManualAgent(BaseAgent):
                     )
 
     async def deliberate_maze(self) -> Optional[str]:
-        """
-        Logic for maps where 'target' is defined.
+        """Logic for maps where 'target' is defined.
 
         Returns:
             Optional[str]: The chosen direction or None.
@@ -99,8 +93,7 @@ class ManualAgent(BaseAgent):
         return await self.get_manual_action()
 
     async def deliberate_room(self) -> Optional[str]:
-        """
-        Logic for room clearing (no target).
+        """Logic for room clearing (no target).
 
         Returns:
             Optional[str]: The chosen direction or None.
@@ -108,11 +101,10 @@ class ManualAgent(BaseAgent):
         return await self.get_manual_action()
 
     async def send_telemetry(self, websocket: Any) -> None:
-        """
-        Send blank telemetry to satisfy the UI requirement.
+        """Send blank telemetry to satisfy the UI requirement.
 
         Args:
-            websocket: The current WebSocket connection.
+            websocket (Any): The current WebSocket connection.
         """
         payload = {
             "action": "telemetry",

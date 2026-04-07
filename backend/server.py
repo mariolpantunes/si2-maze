@@ -10,9 +10,7 @@ import os
 from typing import Any, Dict, List, Optional, Tuple
 
 # Configure standard logging
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 
 class SimulationServer:
@@ -36,13 +34,15 @@ class SimulationServer:
             logging.info(f"Created maps directory at: {os.path.abspath(self.maps_dir)}")
 
     def calculate_reachable_tiles(self) -> int:
-        """
-        Uses BFS to count floor tiles reachable from the start position.
+        r"""Uses BFS to count floor tiles reachable from the start position.
+
+        The number of reachable tiles $R$ is defined as:
+        $R = |\{ (x, y) \in \text{Grid} \mid \text{path}(\text{start}, (x, y)) \}|$
 
         Returns:
             int: Number of reachable floor tiles.
         """
-        if not self.current_map:
+        if self.current_map is None:
             return 0
 
         start_pos: Tuple[int, int] = tuple(self.current_map.get("start", [0, 0]))  # type: ignore
@@ -69,17 +69,14 @@ class SimulationServer:
                     elif nx < 0 or nx >= width or ny < 0 or ny >= height:
                         continue
 
-                    if (nx, ny) not in visited and self.current_map["grid"][ny][
-                        nx
-                    ] != "obstacle":
+                    if (nx, ny) not in visited and self.current_map["grid"][ny][nx] != "obstacle":
                         visited.add((nx, ny))
                         queue.append((nx, ny))
 
         return reachable_count
 
     async def start(self, host: str = "0.0.0.0", port: int = 8765) -> None:
-        """
-        Start the WebSocket server.
+        """Start the WebSocket server.
 
         Args:
             host (str): Host address to bind to.
@@ -92,11 +89,10 @@ class SimulationServer:
             await asyncio.Future()
 
     async def handle_client(self, websocket: Any) -> None:
-        """
-        Handle incoming WebSocket connections.
+        """Handle incoming WebSocket connections.
 
         Args:
-            websocket: The WebSocket connection object.
+            websocket (Any): The WebSocket connection object.
         """
         client_type: str = "Unknown"
         try:
@@ -111,14 +107,8 @@ class SimulationServer:
 
             if client_type == "frontend":
                 if self.frontend_ws is not None:
-                    logging.warning(
-                        "Frontend already connected. Rejecting new connection."
-                    )
-                    await websocket.send(
-                        json.dumps(
-                            {"type": "error", "message": "Frontend already connected."}
-                        )
-                    )
+                    logging.warning("Frontend already connected. Rejecting new connection.")
+                    await websocket.send(json.dumps({"type": "error", "message": "Frontend already connected."}))
                     await websocket.close()
                     return
                 logging.info("Frontend connected.")
@@ -127,14 +117,8 @@ class SimulationServer:
                 await self.frontend_loop(websocket)
             elif client_type == "agent":
                 if self.agent_ws is not None:
-                    logging.warning(
-                        "Agent already connected. Rejecting new connection."
-                    )
-                    await websocket.send(
-                        json.dumps(
-                            {"type": "error", "message": "Agent already connected."}
-                        )
-                    )
+                    logging.warning("Agent already connected. Rejecting new connection.")
+                    await websocket.send(json.dumps({"type": "error", "message": "Agent already connected."}))
                     await websocket.close()
                     return
                 logging.info("Agent connected.")
@@ -143,9 +127,7 @@ class SimulationServer:
                     await self.send_agent_state()
                 await self.agent_loop(websocket)
             else:
-                logging.warning(
-                    f"Unknown client type attempted connection: {client_type}"
-                )
+                logging.warning(f"Unknown client type attempted connection: {client_type}")
 
         except Exception as e:
             logging.error(f"Error handling client {client_type}: {e}")
@@ -158,11 +140,10 @@ class SimulationServer:
                 logging.info("Agent session cleared.")
 
     async def frontend_loop(self, websocket: Any) -> None:
-        """
-        Main loop for handling frontend messages.
+        """Main loop for handling frontend messages.
 
         Args:
-            websocket: The frontend WebSocket connection.
+            websocket (Any): The frontend WebSocket connection.
         """
         async for message in websocket:
             try:
@@ -216,11 +197,10 @@ class SimulationServer:
                 logging.error(f"Error processing frontend message: {e}")
 
     async def agent_loop(self, websocket: Any) -> None:
-        """
-        Main loop for handling agent messages.
+        """Main loop for handling agent messages.
 
         Args:
-            websocket: The agent WebSocket connection.
+            websocket (Any): The agent WebSocket connection.
         """
         async for message in websocket:
             if not self.running or not self.current_map:
@@ -235,22 +215,17 @@ class SimulationServer:
                     await self.send_agent_state()
                 elif data.get("action") == "telemetry":
                     if self.frontend_ws:
-                        await self.frontend_ws.send(
-                            json.dumps(
-                                {"type": "agent_telemetry", "data": data.get("data")}
-                            )
-                        )
+                        await self.frontend_ws.send(json.dumps({"type": "agent_telemetry", "data": data.get("data")}))
             except Exception as e:
                 logging.error(f"Error processing agent message: {e}")
 
     def process_move(self, direction: str) -> None:
-        """
-        Process an agent movement request.
+        """Process an agent movement request.
 
         Args:
             direction (str): Direction to move ('N', 'S', 'E', 'W').
         """
-        if not self.current_map:
+        if self.current_map is None:
             return
 
         x, y = self.sim_state["agent_pos"]
@@ -285,13 +260,12 @@ class SimulationServer:
             self.sim_state["visits"][key] = self.sim_state["visits"].get(key, 0) + 1
 
     def get_valid_actions(self) -> List[str]:
-        """
-        Get a list of valid actions for the agent at its current position.
+        """Get a list of valid actions for the agent at its current position.
 
         Returns:
             List[str]: List of valid cardinal directions.
         """
-        if not self.current_map:
+        if self.current_map is None:
             return []
 
         x, y = self.sim_state["agent_pos"]
@@ -308,16 +282,12 @@ class SimulationServer:
 
         # Check South
         ny = (y + 1) % height if is_teleport else y + 1
-        if (ny < height or is_teleport) and self.current_map["grid"][ny][
-            x
-        ] != "obstacle":
+        if (ny < height or is_teleport) and self.current_map["grid"][ny][x] != "obstacle":
             actions.append("S")
 
         # Check East
         nx = (x + 1) % width if is_teleport else x + 1
-        if (nx < width or is_teleport) and self.current_map["grid"][y][
-            nx
-        ] != "obstacle":
+        if (nx < width or is_teleport) and self.current_map["grid"][y][nx] != "obstacle":
             actions.append("E")
 
         # Check West
@@ -341,7 +311,7 @@ class SimulationServer:
 
     def check_objective(self) -> None:
         """Checks if the simulation objective has been reached."""
-        if not self.current_map:
+        if self.current_map is None:
             return
 
         if self.current_map["type"] == "maze":
@@ -361,9 +331,7 @@ class SimulationServer:
                 "position": self.sim_state["agent_pos"],
                 "valid_actions": self.get_valid_actions(),
                 "objective_reached": not self.running,
-                "target": self.current_map.get("target")
-                if self.current_map["type"] == "maze"
-                else None,
+                "target": self.current_map.get("target") if self.current_map["type"] == "maze" else None,
                 "start": self.current_map.get("start"),
                 "width": self.current_map.get("width"),
                 "height": self.current_map.get("height"),
@@ -386,18 +354,13 @@ class SimulationServer:
         """Sends the list of available maps to the frontend."""
         if self.frontend_ws:
             try:
-                maps = sorted(
-                    [f for f in os.listdir(self.maps_dir) if f.endswith(".json")]
-                )
-                await self.frontend_ws.send(
-                    json.dumps({"type": "map_list", "maps": maps})
-                )
+                maps = sorted([f for f in os.listdir(self.maps_dir) if f.endswith(".json")])
+                await self.frontend_ws.send(json.dumps({"type": "map_list", "maps": maps}))
             except Exception as e:
                 logging.error(f"Failed to read maps directory: {e}")
 
     def load_map(self, filename: str) -> None:
-        """
-        Load a map from a JSON file.
+        """Load a map from a JSON file.
 
         Args:
             filename (str): Name of the map file to load.
@@ -408,10 +371,12 @@ class SimulationServer:
             with open(filepath, "r") as f:
                 self.current_map = json.load(f)
 
+            if self.current_map is None:
+                logging.error(f"Failed to load map {filename}: file is empty or invalid.")
+                return
+
             self.reachable_tiles = self.calculate_reachable_tiles()
-            logging.info(
-                f"Map loaded: {filename}. Reachable floor tiles: {self.reachable_tiles}"
-            )
+            logging.info(f"Map loaded: {filename}. Reachable floor tiles: {self.reachable_tiles}")
 
             start_pos = self.current_map.get("start", [0, 0])
             self.sim_state = {
@@ -442,10 +407,7 @@ class SimulationServer:
                     "Missing required fields (width, height, type, grid, start).",
                 )
 
-            if (
-                not isinstance(data["grid"], list)
-                or len(data["grid"]) != data["height"]
-            ):
+            if not isinstance(data["grid"], list) or len(data["grid"]) != data["height"]:
                 return False, f"Grid height mismatch. Expected {data['height']} rows."
 
             for row in data["grid"]:
@@ -459,9 +421,7 @@ class SimulationServer:
         except Exception as e:
             return False, f"Validation error: {str(e)}"
 
-    def save_map(
-        self, filename: str, map_data: Dict[str, Any]
-    ) -> Tuple[bool, Optional[str]]:
+    def save_map(self, filename: str, map_data: Dict[str, Any]) -> Tuple[bool, Optional[str]]:
         """
         Save map data to a JSON file.
 
@@ -499,5 +459,7 @@ class SimulationServer:
 
 
 if __name__ == "__main__":
+    import os
+    port = int(os.environ.get("PORT", 8765))
     server = SimulationServer()
-    asyncio.run(server.start())
+    asyncio.run(server.start(port=port))

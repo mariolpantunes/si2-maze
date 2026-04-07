@@ -10,9 +10,7 @@ from typing import Any, Dict, Optional
 import websockets
 
 # Configure standard logging
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - AGENT - %(levelname)s - %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - AGENT - %(levelname)s - %(message)s")
 
 
 class BaseAgent:
@@ -23,8 +21,7 @@ class BaseAgent:
     """
 
     def __init__(self, server_uri: str = "ws://localhost:8765") -> None:
-        """
-        Initialize the agent.
+        """Initialize the agent.
 
         Args:
             server_uri (str): URI of the simulation server.
@@ -35,8 +32,8 @@ class BaseAgent:
         self.idle_logged: bool = False
 
     async def run(self) -> None:
-        """
-        Main connection loop.
+        """Main connection loop.
+
         Do not override this unless modifying network protocols.
         """
         try:
@@ -56,9 +53,7 @@ class BaseAgent:
                     if data.get("type") == "state":
                         self.current_state = data
 
-                        if self.current_state and self.current_state.get(
-                            "objective_reached"
-                        ):
+                        if self.current_state and self.current_state.get("objective_reached"):
                             if not self.idle_logged:
                                 await self.deliberate()
                                 await self.send_telemetry(websocket)
@@ -72,9 +67,7 @@ class BaseAgent:
 
                         if action:
                             await self.send_telemetry(websocket)
-                            await websocket.send(
-                                json.dumps({"action": "move", "direction": action})
-                            )
+                            await websocket.send(json.dumps({"action": "move", "direction": action}))
                             await asyncio.sleep(self.step_delay)
 
                     elif data.get("type") == "reset":
@@ -85,8 +78,7 @@ class BaseAgent:
             logging.error(f"Connection error: {e}")
 
     async def deliberate(self) -> Optional[str]:
-        """
-        Routes the deliberation based on the presence of a target (Maze vs Room).
+        """Routes the deliberation based on the presence of a target (Maze vs Room).
 
         Returns:
             Optional[str]: The chosen direction ('N', 'S', 'E', 'W') or None.
@@ -100,20 +92,24 @@ class BaseAgent:
             return await self.deliberate_room()
 
     async def deliberate_maze(self) -> Optional[str]:
-        """
-        Logic for maze navigation.
+        """Logic for maze navigation.
 
         Raises:
             NotImplementedError: Subclasses must implement this.
+
+        Returns:
+            Optional[str]: The chosen direction ('N', 'S', 'E', 'W') or None.
         """
         raise NotImplementedError("Subclasses must implement deliberate_maze()")
 
     async def deliberate_room(self) -> Optional[str]:
-        """
-        Logic for room exploration.
+        """Logic for room exploration.
 
         Raises:
             NotImplementedError: Subclasses must implement this.
+
+        Returns:
+            Optional[str]: The chosen direction ('N', 'S', 'E', 'W') or None.
         """
         raise NotImplementedError("Subclasses must implement deliberate_room()")
 
@@ -122,10 +118,9 @@ class BaseAgent:
         pass
 
     async def send_telemetry(self, websocket: Any) -> None:
-        """
-        Packages internal memory/probabilities and sends them to the frontend UI.
+        """Packages internal memory/probabilities and sends them to the frontend UI.
 
         Args:
-            websocket: The current WebSocket connection.
+            websocket (Any): The current WebSocket connection.
         """
         pass
